@@ -1,16 +1,15 @@
 //! `TransportBackend` impl that drives the Axum + async-graphql server.
-//!
-//! The trait surface lives in `animus-transport-protocol` (v0.1.5).
-//! Until that crate's API stabilises, the impl here is the working draft —
-//! the trait methods compile against what the spec describes; rename / adjust
-//! as the published trait lands.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use chrono::Utc;
 use tokio::sync::Mutex;
 
-use animus_transport_protocol::{TransportBackend, TransportSchema, TransportStartRequest, TransportStopRequest};
+use animus_plugin_protocol::{HealthCheckResult, HealthStatus};
+use animus_transport_protocol::{
+    BackendError, TransportBackend, TransportConfig, TransportInfo, TransportSchema,
+};
 
 use crate::{config::GraphqlConfig, server};
 
@@ -30,12 +29,25 @@ impl TransportBackend for GraphqlTransportBackend {
         }
     }
 
-    async fn start(&self, req: TransportStartRequest) -> anyhow::Result<()> {
+    async fn start(&self, config: TransportConfig) -> Result<TransportInfo, BackendError> {
+        let bind = config
+            .bind_addr
+            .clone()
+            .unwrap_or_else(|| "127.0.0.1:8081".into());
+
         let cfg = GraphqlConfig {
-            bind: req.bind.unwrap_or_else(|| "127.0.0.1:8081".into()),
-            control_socket_path: req.control_socket_path,
-            auth_token: req.auth_token,
-            playground_enabled: true,
+            bind: bind.clone(),
+            control_socket_path: config.control_socket_path,
+            auth_token: config
+                .config
+                .get("auth_token")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string()),
+            playground_enabled: config
+                .config
+                .get("playground")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(true),
         };
 
         let task = tokio::spawn(async move {
@@ -49,14 +61,38 @@ impl TransportBackend for GraphqlTransportBackend {
             prev.abort();
         }
         *guard = Some(task);
-        Ok(())
+
+        Ok(TransportInfo {
+            bound_addr: bind,
+            started_at: Utc::now(),
+        })
     }
 
-    async fn stop(&self, _req: TransportStopRequest) -> anyhow::Result<()> {
+    async fn shutdown(&self) -> Result<(), BackendError> {
         let mut guard = self.handle.lock().await;
         if let Some(handle) = guard.take() {
             handle.abort();
         }
         Ok(())
+    }
+
+    async fn health(&self) -> Result<HealthCheckResult, BackendError> {
+        let running = self
+            .handle
+            .lock()
+            .await
+            .as_ref()
+            .map(|h| !h.is_finished())
+            .unwrap_or(false);
+        Ok(HealthCheckResult {
+            status: if running {
+                HealthStatus::Healthy
+            } else {
+                HealthStatus::Degraded
+            },
+            uptime_ms: None,
+            memory_usage_bytes: None,
+            last_error: None,
+        })
     }
 }

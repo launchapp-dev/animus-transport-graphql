@@ -68,7 +68,12 @@ impl QueueMutation {
         Ok(true)
     }
 
-    async fn hold_queue(&self, ctx: &Context<'_>, id: ID, reason: Option<String>) -> Result<QueueEntry> {
+    async fn hold_queue(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+        reason: Option<String>,
+    ) -> Result<QueueEntry> {
         let _client = client_from_ctx(ctx).await?;
         let _ = (id, reason);
         Ok(QueueEntry::default())

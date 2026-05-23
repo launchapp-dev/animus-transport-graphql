@@ -21,9 +21,9 @@ use async_graphql::Context;
 use crate::{config::GraphqlConfig, control_client::ControlClient};
 
 pub(crate) async fn client_from_ctx(ctx: &Context<'_>) -> async_graphql::Result<ControlClient> {
-    let cfg = ctx
-        .data::<Arc<GraphqlConfig>>()
-        .map_err(|_| async_graphql::Error::new("graphql config not injected into schema context"))?;
+    let cfg = ctx.data::<Arc<GraphqlConfig>>().map_err(|_| {
+        async_graphql::Error::new("graphql config not injected into schema context")
+    })?;
     ControlClient::connect(&cfg.control_socket_path)
         .await
         .map_err(|e| async_graphql::Error::new(format!("failed to connect to control socket: {e}")))

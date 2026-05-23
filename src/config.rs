@@ -26,14 +26,15 @@ fn default_playground_enabled() -> bool {
 
 impl GraphqlConfig {
     pub fn from_env() -> anyhow::Result<Self> {
-        let bind = std::env::var("ANIMUS_TRANSPORT_BIND").unwrap_or_else(|_| "127.0.0.1:8081".into());
+        let bind =
+            std::env::var("ANIMUS_TRANSPORT_BIND").unwrap_or_else(|_| "127.0.0.1:8081".into());
         let control_socket_path = std::env::var("ANIMUS_CONTROL_SOCKET")
             .map(PathBuf::from)
             .map_err(|_| anyhow::anyhow!("ANIMUS_CONTROL_SOCKET env var is required"))?;
         let auth_token = std::env::var("ANIMUS_TRANSPORT_AUTH_TOKEN").ok();
         let playground_enabled = std::env::var("ANIMUS_GRAPHQL_PLAYGROUND")
             .ok()
-            .map(|v| v != "0" && v.to_ascii_lowercase() != "false")
+            .map(|v| v != "0" && !v.eq_ignore_ascii_case("false"))
             .unwrap_or(true);
 
         Ok(Self {

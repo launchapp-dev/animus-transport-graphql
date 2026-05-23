@@ -55,13 +55,21 @@ pub struct SubjectMutation;
 
 #[Object]
 impl SubjectMutation {
-    async fn create_subject(&self, ctx: &Context<'_>, input: CreateSubjectInput) -> Result<Subject> {
+    async fn create_subject(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateSubjectInput,
+    ) -> Result<Subject> {
         let _client = client_from_ctx(ctx).await?;
         let _ = input;
         Ok(Subject::default())
     }
 
-    async fn update_subject(&self, ctx: &Context<'_>, input: UpdateSubjectInput) -> Result<Subject> {
+    async fn update_subject(
+        &self,
+        ctx: &Context<'_>,
+        input: UpdateSubjectInput,
+    ) -> Result<Subject> {
         let _client = client_from_ctx(ctx).await?;
         let _ = input;
         Ok(Subject::default())

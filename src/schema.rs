@@ -50,15 +50,25 @@ pub struct SubscriptionRoot(
 pub type AnimusSchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 pub fn build_schema(cfg: Arc<GraphqlConfig>) -> AnimusSchema {
-    Schema::build(QueryRoot::default(), MutationRoot::default(), SubscriptionRoot::default())
-        .data(cfg)
-        .finish()
+    Schema::build(
+        QueryRoot::default(),
+        MutationRoot::default(),
+        SubscriptionRoot::default(),
+    )
+    .data(cfg)
+    .finish()
 }
 
 /// Build a schema with subscriptions stripped — used by introspection tests
 /// that don't want to wire a streaming control client.
-pub fn build_schema_no_subs(cfg: Arc<GraphqlConfig>) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
-    Schema::build(QueryRoot::default(), MutationRoot::default(), EmptySubscription)
-        .data(cfg)
-        .finish()
+pub fn build_schema_no_subs(
+    cfg: Arc<GraphqlConfig>,
+) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
+    Schema::build(
+        QueryRoot::default(),
+        MutationRoot::default(),
+        EmptySubscription,
+    )
+    .data(cfg)
+    .finish()
 }

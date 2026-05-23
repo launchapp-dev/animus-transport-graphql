@@ -40,7 +40,7 @@ pub fn router(schema: AnimusSchema, cfg: Arc<GraphqlConfig>) -> Router {
 
     Router::new()
         .route("/graphql", graphql_route)
-        .route("/graphql/ws", get(GraphQLSubscription::new(schema.clone())))
+        .route_service("/graphql/ws", GraphQLSubscription::new(schema.clone()))
         .route("/graphql/sdl", get(graphql_sdl_handler))
         .route("/healthz", get(healthz))
         .layer(Extension(schema))

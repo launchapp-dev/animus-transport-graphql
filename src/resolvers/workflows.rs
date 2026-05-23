@@ -55,7 +55,12 @@ pub struct WorkflowMutation;
 
 #[Object]
 impl WorkflowMutation {
-    async fn run_workflow(&self, ctx: &Context<'_>, task_id: ID, workflow: String) -> Result<Workflow> {
+    async fn run_workflow(
+        &self,
+        ctx: &Context<'_>,
+        task_id: ID,
+        workflow: String,
+    ) -> Result<Workflow> {
         let _client = client_from_ctx(ctx).await?;
         let _ = (task_id, workflow);
         // TODO(v0.1.5): client.call("workflow.run", ...)

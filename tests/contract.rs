@@ -47,7 +47,9 @@ async fn workflows_query_returns_empty_list_stub() {
 #[tokio::test]
 async fn queue_query_returns_empty_stub() {
     let schema = build_schema_no_subs(cfg());
-    let res = schema.execute("{ queue { id taskId workflow priority state } }").await;
+    let res = schema
+        .execute("{ queue { id taskId workflow priority state } }")
+        .await;
     assert!(res.errors.is_empty(), "unexpected errors: {:?}", res.errors);
     let data = res.data.into_json().expect("json data");
     assert_eq!(data["queue"], serde_json::json!([]));
