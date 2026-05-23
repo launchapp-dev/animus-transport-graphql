@@ -1,0 +1,31 @@
+[package]
+name = "animus-transport-graphql"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+description = "GraphQL transport plugin for Animus — exposes daemon control RPC at /graphql"
+repository = "https://github.com/launchapp-dev/animus-transport-graphql"
+
+[[bin]]
+name = "animus-transport-graphql"
+path = "src/main.rs"
+
+[dependencies]
+animus-plugin-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", branch = "main" }
+animus-transport-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", branch = "main" }
+animus-control-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", branch = "main" }
+animus-plugin-runtime = { git = "https://github.com/launchapp-dev/animus-protocol", branch = "main" }
+
+async-graphql = { version = "7", features = ["chrono"] }
+async-graphql-axum = "7"
+axum = { version = "0.7", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
