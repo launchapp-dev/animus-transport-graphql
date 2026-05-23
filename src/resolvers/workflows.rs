@@ -3,6 +3,7 @@
 //! Wire shape: defers to `animus-control-protocol` types so the GraphQL
 //! schema and the JSON-RPC wire stay in lockstep (canonical contract).
 
+use animus_control_protocol::types::WorkflowEventsRequest;
 use async_graphql::{Context, Object, Result, SimpleObject, Subscription, ID};
 use futures_util::stream::{self, Stream};
 
@@ -91,17 +92,35 @@ pub struct WorkflowEventsSubscription;
 
 #[Subscription]
 impl WorkflowEventsSubscription {
+    /// Subscribers may hang on `recv` until the daemon-side `workflow/events`
+    /// handler ships — v0.1.10 only ships the client-side surface.
     async fn workflow_events(
         &self,
         ctx: &Context<'_>,
         workflow_id: Option<ID>,
+        kinds: Option<Vec<String>>,
     ) -> Result<impl Stream<Item = WorkflowEvent>> {
-        let _client = client_from_ctx(ctx).await?;
-        let _ = workflow_id;
-        // TODO: Blocked on daemon-side `workflow/events` method — see
-        // animus-protocol spec §14.7. v0.1.9 shipped ControlClient streaming
-        // for subject/watch + daemon/events + daemon/logs --follow, but the
-        // dedicated workflow/events RPC is not yet on the wire.
-        Ok(stream::empty())
+        let client = client_from_ctx(ctx).await?;
+        let request = WorkflowEventsRequest {
+            workflow_id: workflow_id.map(|id| id.to_string()),
+            kinds,
+        };
+        let subscription = client
+            .workflow_events(request)
+            .await
+            .map_err(|e| async_graphql::Error::new(format!("workflow/events failed: {e}")))?;
+        Ok(stream::unfold(
+            (subscription, client),
+            |(mut sub, client)| async move {
+                let event = sub.recv().await?;
+                let projected = WorkflowEvent {
+                    workflow_id: ID(event.workflow_id),
+                    kind: event.kind,
+                    payload: event.payload.to_string(),
+                    at: event.occurred_at.to_rfc3339(),
+                };
+                Some((projected, (sub, client)))
+            },
+        ))
     }
 }
