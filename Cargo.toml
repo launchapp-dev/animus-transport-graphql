@@ -11,10 +11,11 @@ name = "animus-transport-graphql"
 path = "src/main.rs"
 
 [dependencies]
-animus-plugin-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.8" }
-animus-transport-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.8" }
-animus-control-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.8", features = ["client"] }
-animus-plugin-runtime = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.8" }
+animus-plugin-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.9" }
+animus-transport-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.9" }
+animus-control-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.9", features = ["client"] }
+animus-plugin-runtime = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.9" }
+animus-subject-protocol = { git = "https://github.com/launchapp-dev/animus-protocol", tag = "v0.1.9" }
 
 async-graphql = { version = "7", features = ["chrono"] }
 async-graphql-axum = "7"
@@ -32,3 +33,4 @@ chrono = { version = "0.4", features = ["serde"] }
 
 [dev-dependencies]
 tempfile = "3"
+futures-util = "0.3"

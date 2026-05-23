@@ -98,7 +98,10 @@ impl WorkflowEventsSubscription {
     ) -> Result<impl Stream<Item = WorkflowEvent>> {
         let _client = client_from_ctx(ctx).await?;
         let _ = workflow_id;
-        // TODO(v0.1.5): map control_client.subscribe("workflow.events", ...) -> WorkflowEvent
+        // TODO: Blocked on daemon-side `workflow/events` method — see
+        // animus-protocol spec §14.7. v0.1.9 shipped ControlClient streaming
+        // for subject/watch + daemon/events + daemon/logs --follow, but the
+        // dedicated workflow/events RPC is not yet on the wire.
         Ok(stream::empty())
     }
 }

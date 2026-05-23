@@ -1,5 +1,6 @@
 //! Subject (task/requirement/etc.) queries, mutations, and change stream.
 
+use animus_control_protocol::types::SubjectWatchRequest;
 use async_graphql::{Context, InputObject, Object, Result, SimpleObject, Subscription, ID};
 use futures_util::stream::{self, Stream};
 
@@ -86,13 +87,23 @@ impl SubjectChangedSubscription {
         ctx: &Context<'_>,
         kind: Option<String>,
     ) -> Result<impl Stream<Item = SubjectChangeEvent>> {
-        let _client = client_from_ctx(ctx).await?;
-        let _ = kind;
-        // Blocked on animus-control-protocol: METHOD_SUBJECT_WATCH /
-        // NOTIFICATION_SUBJECT_CHANGED are reserved in method.rs but
-        // ControlClient v0.1.8 exposes no subscribe/stream API. Wire this
-        // once upstream adds e.g. `ControlClient::subject_watch(...) ->
-        // Stream<SubjectChangeEvent>` (tracking: animus-protocol#TBD).
-        Ok(stream::empty())
+        let client = client_from_ctx(ctx).await?;
+        let request = SubjectWatchRequest { kind, filter: None };
+        let subscription = client
+            .subject_watch(request)
+            .await
+            .map_err(|e| async_graphql::Error::new(format!("subject/watch failed: {e}")))?;
+        Ok(stream::unfold(
+            (subscription, client),
+            |(mut sub, client)| async move {
+                let event = sub.recv().await?;
+                let projected = SubjectChangeEvent {
+                    subject_id: ID(event.id.as_str().to_string()),
+                    change: format!("{:?}", event.change_kind).to_lowercase(),
+                    at: event.subject.updated_at.to_rfc3339(),
+                };
+                Some((projected, (sub, client)))
+            },
+        ))
     }
 }

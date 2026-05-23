@@ -1,5 +1,6 @@
 //! Daemon health/status queries, control mutations, and event stream.
 
+use animus_control_protocol::types::DaemonEventsRequest;
 use async_graphql::{Context, Object, Result, SimpleObject, Subscription};
 use futures_util::stream::{self, Stream};
 
@@ -72,8 +73,22 @@ pub struct DaemonEventsSubscription;
 #[Subscription]
 impl DaemonEventsSubscription {
     async fn daemon_events(&self, ctx: &Context<'_>) -> Result<impl Stream<Item = DaemonEvent>> {
-        let _client = client_from_ctx(ctx).await?;
-        // TODO(v0.1.5): client.subscribe("daemon.events", ()) -> DaemonEvent
-        Ok(stream::empty())
+        let client = client_from_ctx(ctx).await?;
+        let subscription = client
+            .daemon_events(DaemonEventsRequest::default())
+            .await
+            .map_err(|e| async_graphql::Error::new(format!("daemon/events failed: {e}")))?;
+        Ok(stream::unfold(
+            (subscription, client),
+            |(mut sub, client)| async move {
+                let event = sub.recv().await?;
+                let projected = DaemonEvent {
+                    kind: event.kind,
+                    payload: event.payload.to_string(),
+                    at: event.occurred_at.to_rfc3339(),
+                };
+                Some((projected, (sub, client)))
+            },
+        ))
     }
 }

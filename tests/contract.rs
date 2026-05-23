@@ -4,11 +4,19 @@
 
 use std::sync::Arc;
 
-use animus_plugin_protocol::{RpcRequest, RpcResponse};
-use animus_transport_graphql::{config::GraphqlConfig, schema::build_schema_no_subs};
+use animus_plugin_protocol::{RpcNotification, RpcRequest, RpcResponse};
+use animus_subject_protocol::{ChangeKind, Subject, SubjectChangedEvent, SubjectId, SubjectStatus};
+use animus_transport_graphql::{
+    config::GraphqlConfig,
+    schema::{build_schema, build_schema_no_subs},
+};
+use chrono::Utc;
+use futures_util::StreamExt;
 use tempfile::TempDir;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
+use tokio::sync::Mutex as AsyncMutex;
+use tokio::time::{timeout, Duration};
 
 fn cfg() -> Arc<GraphqlConfig> {
     Arc::new(GraphqlConfig::default())
@@ -150,4 +158,122 @@ async fn queue_query_maps_entries_from_mock_daemon() {
     assert_eq!(entries[1]["held"], true);
     assert_eq!(entries[1]["holdReason"], "manual");
     assert_eq!(entries[2]["state"], "in-flight");
+}
+
+fn sample_event(seq: u64) -> SubjectChangedEvent {
+    let id = SubjectId::new(format!("native:T{seq}"));
+    SubjectChangedEvent {
+        id: id.clone(),
+        change_kind: ChangeKind::Updated,
+        subject: Subject {
+            id,
+            kind: "task".into(),
+            title: format!("task {seq}"),
+            description: None,
+            status: SubjectStatus::Ready,
+            priority: None,
+            assignee: None,
+            labels: vec![],
+            parent: None,
+            children: vec![],
+            url: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            custom: Default::default(),
+            native_status: None,
+            status_metadata: serde_json::Value::Null,
+            attachments: vec![],
+        },
+        previous_native_status: None,
+        previous_dispatch_label: None,
+    }
+}
+
+#[tokio::test]
+async fn subject_changed_subscription_streams_events_and_cancels_on_drop() {
+    let tmp = TempDir::new().unwrap();
+    let socket = tmp.path().join("control.sock");
+    let listener = UnixListener::bind(&socket).unwrap();
+    let received_cancel = Arc::new(AsyncMutex::new(false));
+    let received_cancel_clone = Arc::clone(&received_cancel);
+
+    tokio::spawn(async move {
+        let (conn, _) = listener.accept().await.unwrap();
+        let (read_half, write_half) = conn.into_split();
+        let write_half = Arc::new(AsyncMutex::new(write_half));
+        let mut reader = BufReader::new(read_half);
+
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let req: RpcRequest = serde_json::from_str(line.trim()).unwrap();
+        assert_eq!(req.method, "subject/watch");
+        let req_id = req.id.clone();
+
+        let ack = RpcResponse {
+            jsonrpc: "2.0".into(),
+            id: req_id.clone(),
+            result: Some(serde_json::json!({ "watching": true })),
+            error: None,
+        };
+        {
+            let mut g = write_half.lock().await;
+            let mut frame = serde_json::to_vec(&ack).unwrap();
+            frame.push(b'\n');
+            g.write_all(&frame).await.unwrap();
+            g.flush().await.unwrap();
+        }
+
+        for i in 0..3 {
+            let event = sample_event(i);
+            let notification = RpcNotification::new(
+                "subject/changed".to_string(),
+                Some(serde_json::json!({
+                    "id": req_id,
+                    "data": event,
+                })),
+            );
+            let mut g = write_half.lock().await;
+            let mut frame = serde_json::to_vec(&notification).unwrap();
+            frame.push(b'\n');
+            g.write_all(&frame).await.unwrap();
+            g.flush().await.unwrap();
+            drop(g);
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+
+        let mut cancel_line = String::new();
+        if timeout(Duration::from_secs(2), reader.read_line(&mut cancel_line))
+            .await
+            .is_ok()
+        {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(cancel_line.trim()) {
+                if v.get("method").and_then(|m| m.as_str()) == Some("$/cancelRequest") {
+                    *received_cancel_clone.lock().await = true;
+                }
+            }
+        }
+    });
+
+    let schema = build_schema(cfg_with_socket(socket));
+    let mut stream =
+        schema.execute_stream("subscription { subjectChanged { subjectId change at } }");
+
+    for expected in 0..3 {
+        let resp = timeout(Duration::from_secs(2), stream.next())
+            .await
+            .expect("subscription recv timeout")
+            .expect("stream closed early");
+        assert!(resp.errors.is_empty(), "graphql errors: {:?}", resp.errors);
+        let data = resp.data.into_json().unwrap();
+        let ev = &data["subjectChanged"];
+        assert_eq!(ev["subjectId"], format!("native:T{expected}"));
+        assert_eq!(ev["change"], "updated");
+    }
+
+    drop(stream);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert!(
+        *received_cancel.lock().await,
+        "server did not see $/cancelRequest"
+    );
 }
