@@ -88,7 +88,11 @@ impl SubjectChangedSubscription {
     ) -> Result<impl Stream<Item = SubjectChangeEvent>> {
         let _client = client_from_ctx(ctx).await?;
         let _ = kind;
-        // TODO(v0.1.5): client.subscribe("subject.changed", &{ kind }) -> SubjectChangeEvent
+        // Blocked on animus-control-protocol: METHOD_SUBJECT_WATCH /
+        // NOTIFICATION_SUBJECT_CHANGED are reserved in method.rs but
+        // ControlClient v0.1.8 exposes no subscribe/stream API. Wire this
+        // once upstream adds e.g. `ControlClient::subject_watch(...) ->
+        // Stream<SubjectChangeEvent>` (tracking: animus-protocol#TBD).
         Ok(stream::empty())
     }
 }
