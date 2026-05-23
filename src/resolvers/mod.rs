@@ -4,8 +4,8 @@
 //! - a `*Mutation` struct mounted on the merged `MutationRoot`,
 //! - and zero or more `*Subscription` structs for `SubscriptionRoot`.
 //!
-//! All resolvers go through [`crate::control_client::ControlClient`] — there
-//! is no direct daemon-state access from the GraphQL layer.
+//! All resolvers go through `animus_control_protocol::client::ControlClient`
+//! — there is no direct daemon-state access from the GraphQL layer.
 
 pub mod agent;
 pub mod daemon;
@@ -16,9 +16,10 @@ pub mod workflows;
 
 use std::sync::Arc;
 
+use animus_control_protocol::client::ControlClient;
 use async_graphql::Context;
 
-use crate::{config::GraphqlConfig, control_client::ControlClient};
+use crate::config::GraphqlConfig;
 
 pub(crate) async fn client_from_ctx(ctx: &Context<'_>) -> async_graphql::Result<ControlClient> {
     let cfg = ctx.data::<Arc<GraphqlConfig>>().map_err(|_| {

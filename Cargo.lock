@@ -28,25 +28,27 @@ dependencies = [
 
 [[package]]
 name = "animus-control-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-log-storage-protocol",
  "animus-plugin-protocol",
  "animus-subject-protocol",
  "animus-trigger-protocol",
+ "anyhow",
  "async-trait",
  "chrono",
  "futures-core",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]
 name = "animus-log-storage-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-plugin-protocol",
  "anyhow",
@@ -60,8 +62,8 @@ dependencies = [
 
 [[package]]
 name = "animus-plugin-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "serde",
  "serde_json",
@@ -69,8 +71,8 @@ dependencies = [
 
 [[package]]
 name = "animus-plugin-runtime"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-log-storage-protocol",
  "animus-plugin-protocol",
@@ -88,8 +90,8 @@ dependencies = [
 
 [[package]]
 name = "animus-provider-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-plugin-protocol",
  "anyhow",
@@ -101,8 +103,8 @@ dependencies = [
 
 [[package]]
 name = "animus-subject-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-plugin-protocol",
  "anyhow",
@@ -139,8 +141,8 @@ dependencies = [
 
 [[package]]
 name = "animus-transport-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-plugin-protocol",
  "anyhow",
@@ -153,8 +155,8 @@ dependencies = [
 
 [[package]]
 name = "animus-trigger-protocol"
-version = "0.1.6"
-source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.6#21bb30a77e725eb5c287395a893b02cb6bee4849"
+version = "0.1.8"
+source = "git+https://github.com/launchapp-dev/animus-protocol?tag=v0.1.8#0761ff53ec42309ba1fae9453a266b61b21249a0"
 dependencies = [
  "animus-plugin-protocol",
  "anyhow",

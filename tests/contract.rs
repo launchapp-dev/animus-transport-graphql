@@ -1,5 +1,6 @@
-//! Schema-shape contract tests. These do not require a running daemon — the
-//! resolvers return stub values until the v0.1.5 control client lands.
+//! Schema-shape contract tests. These do not require a running daemon —
+//! schema introspection works without a socket, and resolver queries that
+//! reach for the control socket surface a connection error envelope.
 
 use std::sync::Arc;
 
@@ -36,21 +37,35 @@ async fn introspection_includes_required_roots() {
 }
 
 #[tokio::test]
-async fn workflows_query_returns_empty_list_stub() {
+async fn workflows_query_surfaces_connection_error_without_daemon() {
     let schema = build_schema_no_subs(cfg());
     let res = schema.execute("{ workflows { id name status } }").await;
-    assert!(res.errors.is_empty(), "unexpected errors: {:?}", res.errors);
-    let data = res.data.into_json().expect("json data");
-    assert_eq!(data["workflows"], serde_json::json!([]));
+    assert!(
+        !res.errors.is_empty(),
+        "expected control-socket error, got data: {:?}",
+        res.data
+    );
+    let msg = res.errors[0].message.clone();
+    assert!(
+        msg.contains("control socket"),
+        "expected control-socket failure, got: {msg}"
+    );
 }
 
 #[tokio::test]
-async fn queue_query_returns_empty_stub() {
+async fn queue_query_surfaces_connection_error_without_daemon() {
     let schema = build_schema_no_subs(cfg());
     let res = schema
         .execute("{ queue { id taskId workflow priority state } }")
         .await;
-    assert!(res.errors.is_empty(), "unexpected errors: {:?}", res.errors);
-    let data = res.data.into_json().expect("json data");
-    assert_eq!(data["queue"], serde_json::json!([]));
+    assert!(
+        !res.errors.is_empty(),
+        "expected control-socket error, got data: {:?}",
+        res.data
+    );
+    let msg = res.errors[0].message.clone();
+    assert!(
+        msg.contains("control socket"),
+        "expected control-socket failure, got: {msg}"
+    );
 }
