@@ -6,8 +6,8 @@ use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse, GraphQLSubscription};
 use axum::{
     extract::Extension,
-    http::StatusCode,
-    response::{Html, IntoResponse},
+    http::{header, HeaderMap, StatusCode},
+    response::{Html, IntoResponse, Response},
     routing::{get, post},
     Router,
 };
@@ -49,9 +49,33 @@ pub fn router(schema: AnimusSchema, cfg: Arc<GraphqlConfig>) -> Router {
 
 async fn graphql_handler(
     Extension(schema): Extension<AnimusSchema>,
+    Extension(cfg): Extension<Arc<GraphqlConfig>>,
+    headers: HeaderMap,
     req: GraphQLRequest,
-) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
+) -> Response {
+    if !authorized(&cfg, &headers) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+    GraphQLResponse::from(schema.execute(req.into_inner()).await).into_response()
+}
+
+fn authorized(cfg: &GraphqlConfig, headers: &HeaderMap) -> bool {
+    let Some(expected) = cfg.auth_token.as_deref() else {
+        return true;
+    };
+    headers
+        .get(header::AUTHORIZATION)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(|t| constant_time_eq(t.as_bytes(), expected.as_bytes()))
+        .unwrap_or(false)
+}
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
 async fn graphql_playground() -> impl IntoResponse {
@@ -60,8 +84,15 @@ async fn graphql_playground() -> impl IntoResponse {
     ))
 }
 
-async fn graphql_sdl_handler(Extension(schema): Extension<AnimusSchema>) -> impl IntoResponse {
-    schema.sdl()
+async fn graphql_sdl_handler(
+    Extension(schema): Extension<AnimusSchema>,
+    Extension(cfg): Extension<Arc<GraphqlConfig>>,
+    headers: HeaderMap,
+) -> Response {
+    if !authorized(&cfg, &headers) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
+    schema.sdl().into_response()
 }
 
 async fn healthz() -> impl IntoResponse {

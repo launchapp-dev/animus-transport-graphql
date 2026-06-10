@@ -8,6 +8,12 @@ description = "GraphQL transport plugin — exposes daemon control RPC at /graph
 streaming = true
 websocket = true
 subscriptions = true
+methods = [
+  "transport/start",
+  "transport/shutdown",
+  "transport/schema",
+  "health/check",
+]
 
 [transport]
 kinds = ["graphql"]
